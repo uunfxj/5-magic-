@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>五位數加法魔術預言秀 - 5 Five-Digit Numbers Magic App</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter & Noto Sans TC -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Canvas Confetti for celebratory animations -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        body {
+            font-family: 'Poppins', 'Noto Sans TC', sans-serif;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+        .digit-input {
+            transition: all 0.2s ease;
+        }
+        .digit-input:focus {
+            transform: scale(1.05);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.3);
+        }
+        .sealed-envelope {
+            background: linear-gradient(135deg, #fbbf24 0%, #d97706 100%);
+            box-shadow: 0 10px 25px -5px rgba(217, 119, 6, 0.4);
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-indigo-950 via-slate-900 to-purple-950 min-h-full flex flex-col text-slate-100">
+
+    <!-- Header -->
+    <header class="bg-slate-900/80 backdrop-blur-md border-b border-slate-800 sticky top-0 z-50 shadow-lg">
+        <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="bg-gradient-to-tr from-amber-500 to-orange-500 text-white p-2.5 rounded-2xl shadow-md shadow-orange-500/20">
+                    <i class="fa-solid fa-hat-wizard text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg text-white leading-tight">五位數加法魔術預言</h1>
+                    <p class="text-xs text-amber-400">心靈魔術心理學加法預言系統</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2">
+                <button onclick="app.toggleSound()" id="sound-btn" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold transition-all flex items-center space-x-1.5 border border-slate-700">
+                    <i class="fa-solid fa-volume-high text-amber-400" id="sound-icon"></i><span id="sound-text">音效開</span>
+                </button>
+                <button onclick="app.resetMagic()" class="px-3 py-1.5 bg-rose-900/50 hover:bg-rose-900 text-rose-200 rounded-xl text-xs font-semibold transition-all border border-rose-700/50 flex items-center space-x-1.5">
+                    <i class="fa-solid fa-rotate-right"></i><span>重新開始</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-1 max-w-5xl w-full mx-auto p-4 md:p-6 flex flex-col justify-center space-y-6">
+
+        <!-- Step Instructions Banner -->
+        <div class="bg-slate-900/90 backdrop-blur-md border border-slate-800 rounded-3xl p-5 shadow-xl flex flex-col md:flex-row items-center justify-between gap-4">
+            <div class="flex items-center space-x-4">
+                <div class="w-12 h-12 rounded-2xl bg-indigo-600/30 border border-indigo-500/50 flex items-center justify-center text-indigo-400 font-mono font-black text-xl shrink-0" id="current-step-badge">
+                    S1
+                </div>
+                <div>
+                    <div class="text-xs uppercase tracking-wider text-amber-400 font-bold mb-0.5">目前魔術流程進度</div>
+                    <div class="text-base md:text-lg font-bold text-white" id="current-step-title">Step 1：魔術師隨意填入第一個五位數</div>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2 w-full md:w-auto justify-end">
+                <button onclick="app.prevStep()" id="prev-btn" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold transition-all border border-slate-700 disabled:opacity-40 disabled:cursor-not-allowed">
+                    <i class="fa-solid fa-arrow-left mr-1"></i>上一步
+                </button>
+                <button onclick="app.nextStep()" id="next-btn" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-indigo-600/30 flex items-center space-x-1">
+                    <span>下一步</span><i class="fa-solid fa-arrow-right ml-1"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Two Columns Layout: Magic Inputs & Sealed Prediction -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- Left 2 Cols: 5 Numbers Rows -->
+            <div class="lg:col-span-2 space-y-3.5" id="rows-container">
+                <!-- Generated dynamically for Step 1, Step 3, 4, 5, 6 -->
+            </div>
+
+            <!-- Right 1 Col: Sealed Prediction & Results -->
+            <div class="space-y-4 flex flex-col">
+                
+                <!-- Step 2 Prediction Envelope Box -->
+                <div class="sealed-envelope rounded-3xl p-6 text-slate-900 relative overflow-hidden flex flex-col justify-between shadow-2xl">
+                    <div class="absolute top-0 right-0 p-4 opacity-15">
+                        <i class="fa-solid fa-envelope-open-text text-6xl text-slate-900"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-black uppercase tracking-wider text-amber-900 bg-amber-200/60 px-2.5 py-1 rounded-lg">Step 2: 魔術師預言</span>
+                            <span id="prediction-status-badge" class="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-900 text-amber-100">已密封隱藏</span>
+                        </div>
+                        <h3 class="font-bold text-lg text-amber-950 mb-1">六位數心靈預言</h3>
+                        <p class="text-xs text-amber-900/80 mb-3">請魔術師在此輸入預先預言好的 6 位數字（預設為 888888）：</p>
+                        
+                        <!-- Step 2: Magician's 6-Digit Prediction Input Box -->
+                        <div id="prediction-container" class="space-y-2 bg-amber-100/90 p-3.5 rounded-2xl border border-amber-600/40">
+                            <div class="flex items-center justify-between">
+                                <label for="prediction-input" class="text-xs text-amber-950 font-bold flex items-center">
+                                    <i class="fa-solid fa-key mr-1.5 text-amber-700"></i>魔術師輸入 6 位數預言：
+                                </label>
+                                <span class="text-[11px] text-amber-800 font-semibold">
+                                    <i class="fa-solid fa-shield-halved mr-1"></i>魔術師自訂
+                                </span>
+                            </div>
+                            <div class="flex items-center space-x-1">
+                                <input type="number" id="prediction-input" value="888888" min="100000" max="999999" class="w-full text-center font-mono text-2xl font-black bg-white border-2 border-amber-600/60 rounded-xl py-2 px-3 text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 shadow-inner" placeholder="888888">
+                            </div>
+                        </div>
+
+                        <!-- Revealed Prediction Box -->
+                        <div id="prediction-reveal-box" class="hidden mt-3 p-4 bg-slate-900 text-amber-300 rounded-2xl border-2 border-amber-400 text-center shadow-inner">
+                            <div class="text-xs text-amber-400/80 mb-1">預言信封揭曉結果：</div>
+                            <div class="font-mono text-3xl font-black tracking-wider text-amber-300" id="revealed-number-display">888,888</div>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 pt-3 border-t border-amber-600/30 flex items-center justify-between">
+                        <span class="text-xs font-semibold text-amber-950">狀態：<span id="envelope-state-text">已加密隱藏</span></span>
+                        <button onclick="app.revealPrediction()" id="reveal-magic-btn" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-amber-300 rounded-xl text-xs font-bold transition-all shadow-md flex items-center space-x-1.5 border border-amber-500/50 disabled:opacity-50 disabled:cursor-not-allowed">
+                            <i class="fa-solid fa-wand-magic-sparkles"></i><span>Step 8: 揭曉預言</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Step 7: Calculation & Sum Result Box -->
+                <div class="bg-slate-900/90 backdrop-blur-md rounded-3xl p-6 border border-slate-800 shadow-xl flex flex-col justify-between flex-1">
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-xs font-bold text-indigo-400 uppercase tracking-wider">Step 7: 5個五位數總和</span>
+                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                        </div>
+                        <div class="text-xs text-slate-400 mb-1">相加計算結果：</div>
+                        <div class="font-mono text-3xl md:text-4xl font-black text-white tracking-tight" id="calculated-sum-display">
+                            0
+                        </div>
+                    </div>
+                    <div class="mt-4 pt-4 border-t border-slate-800 flex items-center justify-between">
+                        <button onclick="app.calculateSum()" class="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white rounded-2xl font-bold text-sm transition-all shadow-lg shadow-indigo-600/30 flex items-center justify-center space-x-2">
+                            <i class="fa-solid fa-calculator"></i><span>Step 7: 按下相加計算答案</span>
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-6 right-6 bg-slate-900 text-white px-4 py-3 rounded-2xl shadow-2xl border border-slate-700 flex items-center space-x-3 transform translate-y-20 opacity-0 transition-all duration-300 z-50">
+        <i class="fa-solid fa-circle-check text-emerald-400 text-lg" id="toast-icon"></i>
+        <span class="text-sm font-medium" id="toast-message">操作成功</span>
+    </div>
+
+    <!-- Embarrassing Modal -->
+    <div id="fail-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden transition-all duration-300">
+        <div class="bg-slate-900 border-2 border-rose-500 rounded-3xl p-6 max-w-sm w-full text-center shadow-2xl transform scale-90 transition-all duration-300" id="fail-modal-card">
+            <div class="w-20 h-20 bg-rose-500/20 text-rose-500 rounded-full flex items-center justify-center mx-auto mb-4 text-4xl animate-bounce">
+                <i class="fa-solid fa-face-grimace"></i>
+            </div>
+            <h3 class="text-2xl font-black text-rose-400 mb-2">喔喔~ 真尷尬 好糗唷~ 🙈</h3>
+            <p class="text-slate-300 text-sm mb-4">
+                預言的數字 (<span id="modal-pred-num" class="font-mono font-bold text-amber-400">0</span>) 與相加的總和 (<span id="modal-sum-num" class="font-mono font-bold text-rose-400">0</span>) 竟然不一樣！魔術失敗啦～
+            </p>
+            <button onclick="app.closeFailModal()" class="w-full py-2.5 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl text-sm transition-all shadow-lg shadow-rose-600/30">
+                重新調整或算錯了！
+            </button>
+        </div>
+    </div>
+
+    <!-- Application Script -->
+    <script>
+        class MagicAdditionApp {
+            constructor() {
+                this.rows = [
+                    [1, 1, 1, 1, 1], // S1: Magician
+                    [9, 8, 7, 6, 5], // S3: Spectator
+                    [0, 1, 2, 3, 4], // S4: Magician
+                    [5, 4, 3, 2, 1], // S5: Spectator
+                    [4, 6, 7, 8, 9]  // S6: Magician
+                ];
+                
+                this.roles = [
+                    { step: 1, name: 'Step 1：魔術師隨意填入第一個五位數', role: '魔術師 (Magician)', bg: 'bg-indigo-950/60 border-indigo-500/40', badge: 'bg-indigo-600 text-white' },
+                    { step: 3, name: 'Step 3：受試者/觀眾任意填入五位數', role: '觀眾 (Spectator)', bg: 'bg-purple-950/60 border-purple-500/40', badge: 'bg-purple-600 text-white' },
+                    { step: 4, name: 'Step 4：魔術師填入五位數', role: '魔術師 (Magician)', bg: 'bg-indigo-950/60 border-indigo-500/40', badge: 'bg-indigo-600 text-white' },
+                    { step: 5, name: 'Step 5：受試者/觀眾任意填入五位數', role: '觀眾 (Spectator)', bg: 'bg-purple-950/60 border-purple-500/40', badge: 'bg-purple-600 text-white' },
+                    { step: 6, name: 'Step 6：魔術師填入五位數', role: '魔術師 (Magician)', bg: 'bg-indigo-950/60 border-indigo-500/40', badge: 'bg-indigo-600 text-white' }
+                ];
+
+                this.currentStep = 1;
+                this.soundEnabled = true;
+
+                this.initUI();
+                
+                // Set default prediction strictly to 888888 as requested
+                document.getElementById('prediction-input').value = 888888;
+                
+                this.updateStepView();
+                this.calculateSum();
+
+                // Listen to prediction input changes (no auto calculation, purely manual entry)
+                document.getElementById('prediction-input').addEventListener('input', () => {
+                    this.calculateSum();
+                });
+            }
+
+            initUI() {
+                const container = document.getElementById('rows-container');
+                container.innerHTML = '';
+
+                this.rows.forEach((rowVals, r) => {
+                    const config = this.roles[r];
+                    const card = document.createElement('div');
+                    card.className = `rounded-3xl p-5 border shadow-lg backdrop-blur-md transition-all ${config.bg}`;
+                    card.id = `row-card-${r}`;
+
+                    card.innerHTML = `
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center space-x-2">
+                                <span class="text-xs font-bold px-2.5 py-1 rounded-lg ${config.badge}">S${config.step}: ${config.role}</span>
+                                <span class="text-xs text-slate-400 font-medium">${config.name}</span>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <button onclick="app.randomizeRow(${r})" class="text-xs text-slate-400 hover:text-white px-2 py-1 bg-slate-800/80 rounded-lg border border-slate-700 transition-all">
+                                    <i class="fa-solid fa-rotate mr-1"></i>隨機
+                                </button>
+                                <span class="font-mono font-bold text-sm text-slate-200 bg-slate-900/80 px-3 py-1 rounded-xl border border-slate-800" id="row-preview-${r}">
+                                    00000
+                                </span>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-5 gap-2" id="digits-grid-${r}">
+                            <!-- Digit inputs -->
+                        </div>
+                    `;
+
+                    container.appendChild(card);
+
+                    const grid = document.getElementById(`digits-grid-${r}`);
+                    for (let c = 0; c < 5; c++) {
+                        const input = document.createElement('input');
+                        input.type = 'number';
+                        input.min = '0';
+                        input.max = '9';
+                        input.value = rowVals[c];
+                        input.className = 'digit-input w-full h-12 text-center font-mono font-black text-xl bg-slate-900/90 border border-slate-700 rounded-xl text-white focus:bg-slate-900 focus:border-indigo-500 focus:outline-none';
+                        input.dataset.row = r;
+                        input.dataset.col = c;
+
+                        input.addEventListener('input', (e) => {
+                            let val = e.target.value;
+                            if (val.length > 1) {
+                                val = val.slice(-1);
+                                e.target.value = val;
+                            }
+                            const digit = val === '' ? 0 : parseInt(val, 10);
+                            this.rows[r][c] = isNaN(digit) ? 0 : digit;
+                            this.playSound('click');
+
+                            this.updateRowPreview(r);
+                            this.calculateSum();
+
+                            if (val !== '' && c < 4) {
+                                const nextInput = document.querySelector(`[data-row='${r}'][data-col='${c+1}']`);
+                                if (nextInput) nextInput.focus();
+                            }
+                        });
+
+                        grid.appendChild(input);
+                    }
+                    this.updateRowPreview(r);
+                });
+            }
+
+            getRowNumber(r) {
+                let str = '';
+                for (let c = 0; c < 5; c++) {
+                    str += this.rows[r][c];
+                }
+                return parseInt(str, 10) || 0;
+            }
+
+            setRowNumber(r, num) {
+                let str = String(num).padStart(5, '0').slice(-5);
+                for (let c = 0; c < 5; c++) {
+                    this.rows[r][c] = parseInt(str[c], 10);
+                    const input = document.querySelector(`[data-row='${r}'][data-col='${c}']`);
+                    if (input) input.value = str[c];
+                }
+                this.updateRowPreview(r);
+            }
+
+            updateRowPreview(r) {
+                let num = this.getRowNumber(r);
+                document.getElementById(`row-preview-${r}`).innerText = num.toLocaleString();
+            }
+
+            calculateSum() {
+                let sum = 0;
+                for (let r = 0; r < 5; r++) {
+                    sum += this.getRowNumber(r);
+                }
+                document.getElementById('calculated-sum-display').innerText = sum.toLocaleString();
+                return sum;
+            }
+
+            randomizeRow(r) {
+                this.rows[r][0] = Math.floor(Math.random() * 9) + 1;
+                for (let c = 1; c < 5; c++) {
+                    this.rows[r][c] = Math.floor(Math.random() * 10);
+                }
+                for (let c = 0; c < 5; c++) {
+                    const input = document.querySelector(`[data-row='${r}'][data-col='${c}']`);
+                    if (input) input.value = this.rows[r][c];
+                }
+                this.updateRowPreview(r);
+                this.calculateSum();
+                this.showToast(`Step ${this.roles[r].step} 數字已隨機產生`);
+            }
+
+            nextStep() {
+                if (this.currentStep < 8) {
+                    this.currentStep++;
+                    if (this.currentStep === 7) {
+                        this.calculateSum();
+                    } else if (this.currentStep === 8) {
+                        this.revealPrediction();
+                    }
+                    this.updateStepView();
+                }
+            }
+
+            prevStep() {
+                if (this.currentStep > 1) {
+                    this.currentStep--;
+                    this.updateStepView();
+                }
+            }
+
+            updateStepView() {
+                document.getElementById('current-step-badge').innerText = `S${this.currentStep}`;
+                
+                const titles = {
+                    1: "Step 1：魔術師隨意填入第一個五位數",
+                    2: "Step 2：魔術師填入六位數『預言』並將預言隱藏起來 (預設888888)",
+                    3: "Step 3：受試者/觀眾任意填入五位數",
+                    4: "Step 4：魔術師填入五位數",
+                    5: "Step 5：受試者/觀眾任意填入五位數",
+                    6: "Step 6：魔術師填入五位數",
+                    7: "Step 7：按下『相加』按鈕，呈現總和答案",
+                    8: "Step 8：按下『魔術師預言』，揭曉答案與歡呼或搞笑特效！"
+                };
+
+                document.getElementById('current-step-title').innerText = titles[this.currentStep] || "";
+
+                document.getElementById('prev-btn').disabled = this.currentStep === 1;
+                document.getElementById('next-btn').disabled = this.currentStep === 8;
+
+                for (let r = 0; r < 5; r++) {
+                    const card = document.getElementById(`row-card-${r}`);
+                    if (!card) continue;
+                    let targetStep = [1, 3, 4, 5, 6][r];
+                    if (this.currentStep === targetStep) {
+                        card.classList.add('ring-2', 'ring-amber-400', 'shadow-amber-500/20');
+                    } else {
+                        card.classList.remove('ring-2', 'ring-amber-400', 'shadow-amber-500/20');
+                    }
+                }
+            }
+
+            revealPrediction() {
+                const predVal = parseInt(document.getElementById('prediction-input').value, 10) || 0;
+                const calculatedSum = this.calculateSum();
+
+                // Unhide the prediction display card
+                document.getElementById('revealed-number-display').innerText = predVal.toLocaleString();
+                document.getElementById('prediction-container').classList.add('hidden');
+                document.getElementById('prediction-reveal-box').classList.remove('hidden');
+
+                // Check if prediction matches calculated sum
+                if (predVal === calculatedSum) {
+                    // MATCH: Success magic effect!
+                    document.getElementById('prediction-status-badge').innerText = '預言已揭曉！';
+                    document.getElementById('prediction-status-badge').className = 'text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-600 text-white';
+                    document.getElementById('envelope-state-text').innerText = '已完美命中！';
+
+                    this.playSound('cheer');
+                    confetti({ particleCount: 180, spread: 100, origin: { y: 0.6 } });
+                    this.showToast('🎉 魔術預言完美揭曉！命中總和！');
+                } else {
+                    // MISMATCH: Awkward failure effect!
+                    document.getElementById('prediction-status-badge').innerText = '預言失敗！';
+                    document.getElementById('prediction-status-badge').className = 'text-xs font-bold px-2 py-0.5 rounded-full bg-rose-600 text-white';
+                    document.getElementById('envelope-state-text').innerText = '數字不相符！';
+
+                    this.playSound('fail');
+                    this.showFailModal(predVal, calculatedSum);
+                    this.showToast('😅 喔喔~ 數字不一樣，好糗唷！');
+                }
+
+                this.currentStep = 8;
+                this.updateStepView();
+            }
+
+            showFailModal(pred, sum) {
+                document.getElementById('modal-pred-num').innerText = pred.toLocaleString();
+                document.getElementById('modal-sum-num').innerText = sum.toLocaleString();
+                const modal = document.getElementById('fail-modal');
+                const card = document.getElementById('fail-modal-card');
+                modal.classList.remove('hidden');
+                setTimeout(() => {
+                    card.classList.remove('scale-90');
+                    card.classList.add('scale-100');
+                }, 10);
+            }
+
+            closeFailModal() {
+                const modal = document.getElementById('fail-modal');
+                const card = document.getElementById('fail-modal-card');
+                card.classList.remove('scale-100');
+                card.classList.add('scale-90');
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                }, 200);
+            }
+
+            resetMagic() {
+                this.closeFailModal();
+                document.getElementById('prediction-input').value = 888888;
+                document.getElementById('prediction-container').classList.remove('hidden');
+                document.getElementById('prediction-reveal-box').classList.add('hidden');
+                document.getElementById('prediction-status-badge').innerText = '已密封隱藏';
+                document.getElementById('prediction-status-badge').className = 'text-xs font-bold px-2 py-0.5 rounded-full bg-amber-900 text-amber-100';
+                document.getElementById('envelope-state-text').innerText = '已加密隱藏';
+                
+                this.currentStep = 1;
+                this.updateStepView();
+                this.calculateSum();
+                this.showToast('魔術道具已重設！');
+            }
+
+            toggleSound() {
+                this.soundEnabled = !this.soundEnabled;
+                const icon = document.getElementById('sound-icon');
+                const text = document.getElementById('sound-text');
+                if (this.soundEnabled) {
+                    icon.className = 'fa-solid fa-volume-high text-amber-400';
+                    text.innerText = '音效開';
+                    this.showToast('已開啟音效');
+                } else {
+                    icon.className = 'fa-solid fa-volume-xmark text-slate-500';
+                    text.innerText = '音效關';
+                    this.showToast('已關閉音效');
+                }
+            }
+
+            playSound(type) {
+                if (!this.soundEnabled) return;
+                try {
+                    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                    
+                    if (type === 'cheer') {
+                        const notes = [523.25, 659.25, 783.99, 1046.50, 1318.51, 1567.98];
+                        notes.forEach((freq, idx) => {
+                            const osc = ctx.createOscillator();
+                            const gain = ctx.createGain();
+                            osc.connect(gain);
+                            gain.connect(ctx.destination);
+                            
+                            osc.type = 'triangle';
+                            osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.08);
+                            gain.gain.setValueAtTime(0.15, ctx.currentTime + idx * 0.08);
+                            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + idx * 0.08 + 0.4);
+                            
+                            osc.start(ctx.currentTime + idx * 0.08);
+                            osc.stop(ctx.currentTime + idx * 0.08 + 0.4);
+                        });
+                    } else if (type === 'fail') {
+                        const failNotes = [400, 360, 320, 220];
+                        failNotes.forEach((freq, idx) => {
+                            const osc = ctx.createOscillator();
+                            const gain = ctx.createGain();
+                            osc.connect(gain);
+                            gain.connect(ctx.destination);
+                            
+                            osc.type = 'sawtooth';
+                            const startTime = ctx.currentTime + idx * 0.22;
+                            osc.frequency.setValueAtTime(freq, startTime);
+                            
+                            if (idx === failNotes.length - 1) {
+                                osc.frequency.exponentialRampToValueAtTime(120, startTime + 0.6);
+                            }
+
+                            gain.gain.setValueAtTime(0.18, startTime);
+                            gain.gain.exponentialRampToValueAtTime(0.001, startTime + (idx === failNotes.length - 1 ? 0.6 : 0.2));
+                            
+                            osc.start(startTime);
+                            osc.stop(startTime + (idx === failNotes.length - 1 ? 0.6 : 0.2));
+                        });
+                    } else {
+                        const osc = ctx.createOscillator();
+                        const gain = ctx.createGain();
+                        osc.connect(gain);
+                        gain.connect(ctx.destination);
+                        osc.frequency.setValueAtTime(440, ctx.currentTime);
+                        gain.gain.setValueAtTime(0.04, ctx.currentTime);
+                        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
+                        osc.start();
+                        osc.stop(ctx.currentTime + 0.08);
+                    }
+                } catch (e) {}
+            }
+
+            showToast(msg) {
+                const toast = document.getElementById('toast');
+                document.getElementById('toast-message').innerText = msg;
+                toast.classList.remove('translate-y-20', 'opacity-0');
+                setTimeout(() => {
+                    toast.classList.add('translate-y-20', 'opacity-0');
+                }, 2500);
+            }
+        }
+
+        let app;
+        window.addEventListener('DOMContentLoaded', () => {
+            app = new MagicAdditionApp();
+        });
+    </script>
+</body>
+</html>
